@@ -57,12 +57,10 @@ int             occupancyHistogram [2] [MAX_OCCUPANCY + 1];
 int threadcount = 0;
 
 void enterStreet (enum Direction g, int threadID) {
-  printf("threadID: %d, %d, numCars: %d pre wait\n", threadID, g, Street.numCars);
   uthread_mutex_lock(Street.mx);
   while(Street.numCars >= 3 || ((g != Street.direction) && Street.numCars != 0)){
     uthread_cond_wait(Street.cond);
   }
-  printf("threadID: %d, %d, numCars: %d done wait\n", threadID, g, Street.numCars);
   uthread_mutex_lock(waitingHistogramLock);
   entryTicker++;
   uthread_mutex_unlock(waitingHistogramLock);
@@ -72,8 +70,6 @@ void enterStreet (enum Direction g, int threadID) {
   }
   Street.numCars++;
   
-  printf("threadID: %d, %d, numCars: %d entered entryTicker: %d\n", threadID, g, Street.numCars, entryTicker);
-
   uthread_mutex_lock(waitingHistogramLock);
   occupancyHistogram[Street.direction][Street.numCars]++;
   uthread_mutex_unlock(waitingHistogramLock);
@@ -86,10 +82,9 @@ void enterStreet (enum Direction g, int threadID) {
 }
 
 void leaveStreet(int threadID, enum Direction g) {
-  // TODO
+  
   uthread_mutex_lock(Street.mx);
   Street.numCars--;
-  printf("threadID: %d, %d, numCars: %d leave\n", threadID, g, Street.numCars);
   uthread_cond_broadcast(Street.cond);
   uthread_mutex_unlock(Street.mx);
 }
@@ -103,10 +98,7 @@ void recordWaitingTime (int waitingTime) {
   uthread_mutex_unlock (waitingHistogramLock);
 }
 
-//
-// TODO
-// You will probably need to create some additional procedures etc.
-//
+
 void* car(void* direction){
   enum Direction* d = direction;
 
@@ -121,10 +113,8 @@ void* car(void* direction){
     uthread_mutex_unlock (waitingHistogramLock);
 
     enterStreet(*d, threadID);
-    printf("threadID: %d, %d, numCars: %d outofenterStreet entryTicker: %d\n", threadID, *d, Street.numCars, entryTicker);
     
     recordWaitingTime(entryTicker - startET);
-    printf("threadID: %d, %d, numCars: %d waittime: %d\n", threadID, *d, Street.numCars, (entryTicker - startET));
     for(int i = 0; i < CROSSING_TIME; i++){
       uthread_yield();
     }
@@ -147,7 +137,6 @@ int main (int argc, char** argv) {
   initializeStreet();
   uthread_t pt [NUM_CARS];
 
-  // TODO
   srand(time(NULL));
   for (int i = 0; i < NUM_CARS; i++){
     
